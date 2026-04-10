@@ -1,0 +1,107 @@
+<template>
+    <lightning-card title="Account Summary" icon-name="standard:account">
+        <!-- Loading Spinner -->
+        <template if:true={isLoading}>
+            <div class="slds-is-relative slds-m-around_medium" style="min-height: 6rem;">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:false={isLoading}>
+            <!-- Error / No Data State -->
+            <template if:false={hasData}>
+                <div class="slds-m-around_medium slds-text-align_center slds-text-color_weak">
+                    <p>No data found</p>
+                </div>
+            </template>
+
+            <!-- Main Content -->
+            <template if:true={hasData}>
+                <div class="slds-m-around_medium">
+
+                    <!-- Account Information -->
+                    <div class="slds-section slds-is-open">
+                        <h3 class="slds-section__title slds-theme_shade">
+                            <span class="slds-truncate slds-p-horizontal_small">Account Information</span>
+                        </h3>
+                        <div class="slds-section__content slds-p-top_small">
+                            <dl class="slds-dl_horizontal">
+                                <dt class="slds-dl_horizontal__label slds-text-color_weak">Name</dt>
+                                <dd class="slds-dl_horizontal__detail">{name}</dd>
+                                <dt class="slds-dl_horizontal__label slds-text-color_weak">Type</dt>
+                                <dd class="slds-dl_horizontal__detail">{type}</dd>
+                                <dt class="slds-dl_horizontal__label slds-text-color_weak">Industry</dt>
+                                <dd class="slds-dl_horizontal__detail">{industry}</dd>
+                                <dt class="slds-dl_horizontal__label slds-text-color_weak">Phone</dt>
+                                <dd class="slds-dl_horizontal__detail">{phone}</dd>
+                                <dt class="slds-dl_horizontal__label slds-text-color_weak">Owner</dt>
+                                <dd class="slds-dl_horizontal__detail">{ownerName}</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- Open Opportunities -->
+                    <div class="slds-section slds-is-open slds-m-top_medium">
+                        <h3 class="slds-section__title slds-theme_shade">
+                            <span class="slds-truncate slds-p-horizontal_small">
+                                Open Opportunities ({openOpportunityCount})
+                            </span>
+                        </h3>
+                        <div class="slds-section__content slds-p-top_small">
+                            <template if:true={hasOpportunities}>
+                                <ul class="slds-list_dotted">
+                                    <template for:each={openOpportunities} for:item="opp">
+                                        <li key={opp.Id} class="slds-m-bottom_xx-small">
+                                            <!-- svelte-ignore a11y-invalid-attribute -->
+                                            <a href="javascript:void(0)"
+                                               data-record-id={opp.Id}
+                                               data-object-type="Opportunity"
+                                               onclick={handleRecordNavigation}>
+                                                {opp.Name}
+                                            </a>
+                                            <span class="slds-text-color_weak"> &mdash; {opp.StageName}</span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template if:false={hasOpportunities}>
+                                <p class="slds-text-color_weak slds-text-body_small">No open opportunities found</p>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Open Cases -->
+                    <div class="slds-section slds-is-open slds-m-top_medium">
+                        <h3 class="slds-section__title slds-theme_shade">
+                            <span class="slds-truncate slds-p-horizontal_small">
+                                Open Cases ({openCaseCount})
+                            </span>
+                        </h3>
+                        <div class="slds-section__content slds-p-top_small">
+                            <template if:true={hasCases}>
+                                <ul class="slds-list_dotted">
+                                    <template for:each={openCases} for:item="cas">
+                                        <li key={cas.Id} class="slds-m-bottom_xx-small">
+                                            <!-- svelte-ignore a11y-invalid-attribute -->
+                                            <a href="javascript:void(0)"
+                                               data-record-id={cas.Id}
+                                               data-object-type="Case"
+                                               onclick={handleRecordNavigation}>
+                                                #{cas.CaseNumber} &mdash; {cas.Subject}
+                                            </a>
+                                            <span class="slds-text-color_weak"> ({cas.Status})</span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template if:false={hasCases}>
+                                <p class="slds-text-color_weak slds-text-body_small">No open cases found</p>
+                            </template>
+                        </div>
+                    </div>
+
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+</template>

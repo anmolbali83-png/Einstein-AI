@@ -1,0 +1,229 @@
+<template>
+    <!-- Loading state -->
+    <template lwc:if={isLoading}>
+        <div class="slds-p-around_large slds-align_absolute-center">
+            <lightning-spinner alternative-text="Loading case" size="medium"></lightning-spinner>
+        </div>
+    </template>
+
+    <!-- Error state -->
+    <template lwc:elseif={hasError}>
+        <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+            <lightning-icon icon-name="utility:error" size="x-small" class="slds-m-right_x-small" alternative-text="Error"></lightning-icon>
+            <h2>{errorMessage}</h2>
+        </div>
+    </template>
+
+    <!-- Ready state -->
+    <template lwc:else>
+
+        <!-- ═══ LOCKED VIEW — Closed or Resolved ═══ -->
+        <template lwc:if={isLocked}>
+
+            <!-- Lock banner -->
+            <div class="lock-banner slds-m-bottom_medium" role="status">
+                <lightning-icon icon-name="utility:lock" size="x-small" class="slds-m-right_x-small" alternative-text="Locked"></lightning-icon>
+                <span>This case is <strong>{caseStatus}</strong>. All fields, comments, and attachments are read-only.</span>
+            </div>
+
+            <!-- Case fields: read-only -->
+            <lightning-card title="Case Details" icon-name="standard:case">
+                <div class="slds-p-around_medium">
+                    <lightning-record-view-form record-id={recordId} object-api-name="Case">
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="CaseNumber"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="Status"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="Priority"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="Type"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="Origin"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="Product__c"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="PotentialLiability__c"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="SLAViolation__c"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-output-field field-name="EngineeringReqNumber__c"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-output-field field-name="Subject"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-output-field field-name="Description"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-output-field field-name="Quick_Summary__c"></lightning-output-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-output-field field-name="FreshDesk_URL__c"></lightning-output-field>
+                            </div>
+                        </div>
+                    </lightning-record-view-form>
+                </div>
+            </lightning-card>
+
+            <!-- Comments: read-only, no edit / delete -->
+            <lightning-card title="Comments" icon-name="standard:case_comment" class="slds-m-top_medium">
+                <div class="slds-p-around_medium">
+                    <div class="slds-notify slds-notify_alert slds-alert_offline readonly-notice" role="status">
+                        <lightning-icon icon-name="utility:lock" size="xx-small" class="slds-m-right_xx-small" alternative-text="Read only"></lightning-icon>
+                        Comments are read-only on a {caseStatus} case.
+                    </div>
+                    <template lwc:if={hasComments}>
+                        <template for:each={comments} for:item="comment">
+                            <div key={comment.id} class="comment-item slds-m-top_small">
+                                <div class="slds-grid slds-grid_align-spread slds-m-bottom_xx-small">
+                                    <span class="slds-text-body_small slds-text-color_weak">
+                                        <strong>{comment.createdByName}</strong>
+                                    </span>
+                                    <lightning-formatted-date-time
+                                        value={comment.createdDate}
+                                        year="numeric"
+                                        month="short"
+                                        day="2-digit"
+                                        hour="2-digit"
+                                        minute="2-digit">
+                                    </lightning-formatted-date-time>
+                                </div>
+                                <p class="slds-text-body_regular">{comment.commentBody}</p>
+                            </div>
+                        </template>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-color_weak slds-m-top_small">No comments on this case.</p>
+                    </template>
+                </div>
+            </lightning-card>
+
+            <!-- Attachments: read-only, no upload / delete -->
+            <lightning-card title="Attachments" icon-name="doctype:attachment" class="slds-m-top_medium">
+                <div class="slds-p-around_medium">
+                    <div class="slds-notify slds-notify_alert slds-alert_offline readonly-notice" role="status">
+                        <lightning-icon icon-name="utility:lock" size="xx-small" class="slds-m-right_xx-small" alternative-text="Read only"></lightning-icon>
+                        Attachments are read-only on a {caseStatus} case.
+                    </div>
+                    <template lwc:if={hasAttachments}>
+                        <lightning-datatable
+                            key-field="documentId"
+                            data={attachments}
+                            columns={attachmentColumns}
+                            hide-checkbox-column
+                            class="slds-m-top_small">
+                        </lightning-datatable>
+                    </template>
+                    <template lwc:else>
+                        <p class="slds-text-color_weak slds-m-top_small">No attachments on this case.</p>
+                    </template>
+                </div>
+            </lightning-card>
+
+            <!-- Feedback: always accessible on locked cases -->
+            <lightning-card title="Provide Feedback" icon-name="utility:feedback" class="slds-m-top_medium">
+                <div class="slds-p-around_medium">
+                    <p class="slds-m-bottom_small slds-text-color_weak">
+                        Share your experience or thoughts on this case. Your feedback will be added as a comment.
+                    </p>
+                    <lightning-textarea
+                        label="Your Feedback"
+                        value={feedbackText}
+                        onchange={handleFeedbackChange}
+                        placeholder="Enter your feedback here..."
+                        max-length="32000"
+                        class="slds-m-bottom_small">
+                    </lightning-textarea>
+                    <lightning-button
+                        label="Submit Feedback"
+                        variant="brand"
+                        onclick={handleFeedbackSubmit}
+                        disabled={isFeedbackSubmitting}>
+                    </lightning-button>
+                </div>
+            </lightning-card>
+
+        </template>
+
+        <!-- ═══ EDIT VIEW — New / In Progress / etc. ═══ -->
+        <template lwc:else>
+            <lightning-card title="Case Details" icon-name="standard:case">
+                <div class="slds-p-around_medium">
+                    <lightning-record-edit-form
+                        record-id={recordId}
+                        object-api-name="Case"
+                        onsuccess={handleSuccess}
+                        onerror={handleFormError}>
+
+                        <lightning-messages></lightning-messages>
+
+                        <div class="slds-grid slds-wrap">
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="Status"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="Priority"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="Type"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="Origin"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="Product__c"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="PotentialLiability__c"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="SLAViolation__c"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-2 slds-p-around_x-small">
+                                <lightning-input-field field-name="EngineeringReqNumber__c"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-input-field field-name="Subject"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-input-field field-name="Description"></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-p-around_x-small">
+                                <lightning-input-field field-name="Quick_Summary__c"></lightning-input-field>
+                            </div>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="slds-m-top_medium slds-grid slds-grid_align-end button-row">
+                            <!-- Cancel hidden when status is New -->
+                            <template lwc:if={showCancelButton}>
+                                <lightning-button
+                                    label="Cancel"
+                                    class="slds-m-right_x-small"
+                                    onclick={handleCancel}>
+                                </lightning-button>
+                            </template>
+                            <lightning-button
+                                type="submit"
+                                label="Save"
+                                variant="brand">
+                            </lightning-button>
+                        </div>
+
+                    </lightning-record-edit-form>
+                </div>
+            </lightning-card>
+        </template>
+
+    </template>
+</template>
