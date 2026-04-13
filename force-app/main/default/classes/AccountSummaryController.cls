@@ -1,5 +1,5 @@
 public with sharing class AccountSummaryController {
-
+//test git
     @AuraEnabled(cacheable=true)
     public static AccountSummaryData getAccountSummaryData(Id accountId) {
         AccountSummaryData result = new AccountSummaryData();
