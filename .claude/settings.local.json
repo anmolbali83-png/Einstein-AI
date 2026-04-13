@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -d force-app/main/default/objects/*/)",
+      "Bash(find force-app/main/default -name \".eslintrc.json\" -exec cat {} \\\\;)",
+      "Bash(claude mcp:*)",
+      "Bash(npx:*)",
+      "Bash(npm --version)",
+      "Bash(/c/Program Files/sfdx/client/bin/node.exe:*)",
+      "Bash(\"/c/Program Files/sfdx/client/bin/node.exe\" \"/c/Program Files/sfdx/client/node_modules/npm/bin/npx-cli.js\" -y @salesforce/mcp --orgs Einstein_AI --toolsets all)",
+      "Bash(kill %1)",
+      "Bash(powershell.exe:*)",
+      "Bash(\"/c/Program Files \\(x86\\)/nodejs/node.exe\" --version)",
+      "Bash(\"/c/Program Files \\(x86\\)/nodejs/npx.cmd\" --version)",
+      "Bash(/c/Program Files \\(x86\\)/nodejs/npx.cmd:*)",
+      "Bash(timeout 30 \"/c/Program Files \\(x86\\)/nodejs/node.exe\" \"/c/Program Files \\(x86\\)/nodejs/node_modules/npm/bin/npx-cli.js\" -y @salesforce/mcp --orgs Einstein_AI --toolsets all)",
+      "Bash(/c/Program Files \\(x86\\)/nodejs/npm.cmd install:*)",
+      "Bash(sf project:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

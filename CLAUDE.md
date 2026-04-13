@@ -30,7 +30,10 @@ npx sfdx-lwc-jest -- --testPathPattern=flexTemplateLwc # Run a single component'
 
 ### Salesforce CLI
 
-> **Deployment rule:** Always use the **Salesforce MCP** (`mcp__Salesforce__deploy_metadata`, `mcp__Salesforce__retrieve_metadata`, `mcp__Salesforce__run_apex_test`, etc.) for all deploy, retrieve, and test operations. Fall back to the `sf` CLI commands below **only if** the Salesforce MCP is unavailable or fails after a real attempt.
+> **Tooling rule — use MCP servers first:**
+> - **Salesforce activities** (deploy, retrieve, SOQL, Apex tests, code analyzer, metadata exploration, LWC/LDS guidance, etc.): use the **Salesforce MCP** tools (`mcp__Salesforce__deploy_metadata`, `mcp__Salesforce__retrieve_metadata`, `mcp__Salesforce__run_soql_query`, `mcp__Salesforce__run_apex_test`, `mcp__Salesforce__run_code_analyzer`, `mcp__Salesforce__guide_lwc_development`, etc.).
+> - **Git / GitHub activities** (branches, PRs, issues, commits on remote, file operations on GitHub): use the **GitHub MCP** tools (`mcp__github__create_pull_request`, `mcp__github__create_branch`, `mcp__github__create_issue`, `mcp__github__get_pull_request`, `mcp__github__list_pull_requests`, `mcp__github__merge_pull_request`, `mcp__github__create_or_update_file`, etc.).
+> - Fall back to the `sf` / `git` / `gh` CLI commands below **only if** the corresponding MCP is unavailable or fails after a real attempt.
 
 ```bash
 sf auth web login                                                              # Authenticate to org (no MCP equivalent)
@@ -69,24 +72,44 @@ sf apex run test --test-level RunLocalTests                                    #
 | `UserInfoHandler` | Invocable — returns current user's name, company, employee number, and role |
 | `ZipCodeName` | Invocable (`callout=true`) — looks up a city name from a ZIP code via ZipCodeStack API |
 | `TicketSystem` | Helper — `POST` to the FreshDesk API via Named Credential `callout:freshDesk` |
+| `AccountSummaryController` | `@AuraEnabled` — fetches open opportunities (max 5) and open cases (max 5) for an Account; uses `USER_MODE` for field-level security |
+| `CaseLockController` | `@AuraEnabled` — powers `caseLock` LWC; returns case data, comments (max 50), attachments; handles feedback submission |
 
 ### LWC Components (Frontend — `force-app/main/default/lwc/`)
 
-Currently one component: **`flexTemplateLwc`** — provides a UI for selecting an Account name and rating, then calls `FlexTemplateController.getFlexTemplateResponse()` to invoke the Einstein Prompt Template and display the result.
+| Component | Target | Role |
+|---|---|---|
+| `flexTemplateLwc` | RecordPage, AppPage, HomePage, Tab | UI for selecting Account name + rating, calls `FlexTemplateController` to invoke the Einstein Prompt Template, displays result as rich text |
+| `caseLock` | Case RecordPage only | Dual-mode: read-only locked view (Status = Closed/Resolved) with comments, attachments, and feedback form; editable form for active cases |
+| `accountSummary` | Account RecordPage only | Displays account info, open opportunities, and open cases; uses `NavigationMixin` for record navigation |
+
+`caseLock` wires three methods from `CaseLockController`: `getCaseData`, `getCaseComments`, `getCaseAttachments`. Feedback submission calls `submitFeedback` as an imperative, creating a CaseComment prefixed with `[Feedback]`.
 
 ### Custom Domain Objects
 
-- **`Soft_Drink__c`**: Product-like object with fields: Name, Rating__c, Price__c, Quantity_Left__c, Total_Quantity__c, Status__c, Sugar__c, Tags__c, brewery_Name__c
-- **`Soft_Drink_Order__c`**: Junction-like object linking Account and Soft_Drink__c with: Quantity__c, Price__c, Status__c, Order_Number__c
+- **`Soft_Drink__c`**: Product-like object (AutoName: "Drink Name"); fields include Name, Rating__c, Price__c, Quantity_Left__c, Quantity_Used__c, Total_Quantity__c, Status__c, Sugar__c, Tags__c, brewery_Name__c, brewery_id__c, Description__c, Image__c, Id__c
+- **`Soft_Drink_Order__c`**: Junction object linking Account and Soft_Drink__c (AutoNumber: `SD-{00000000}`, sharing ControlledByParent); fields: Account__c, Soft_Drink__c (lookup), Quantity__c, Price__c, Status__c, Order_Number__c
+- **`Part__c`**: Part catalog (Name labeled "Part Number"); fields: `Part_Description__c` (Text 255), `Part_Cost__c` (Currency 18,2). Referenced by `Case.Part_Number__c` lookup.
+- **`Brand__c`**: Equipment brand catalog (Name labeled "Brand Name"); fields: `Brand_Code__c` (Text 20).
+- **`Model__c`**: Equipment model catalog (Name labeled "Model Name"); fields: `Brand_Name__c` (Lookup → `Brand__c`). Referenced by `Asset.Model_Name__c` lookup.
 
-Standard objects have custom fields added: `Case.freshDeskId__c`, `Case.Quick_Summary__c`, `Case.FreshDesk_URL__c`, `Account.Account_Summary__c`, `Product2.Rating__c`.
+Equipment hierarchy: `Brand__c` ← `Model__c` ← `Asset` (via `Asset.Model_Name__c`). Models roll up to Brands; Assets roll up to Models.
+
+Standard objects with custom fields:
+- **`Case`**: freshDeskId__c, Quick_Summary__c, FreshDesk_URL__c, Product__c, EngineeringReqNumber__c, PotentialLiability__c, SLAViolation__c, Used_With__c (Text 50), No_Causal_Part_Reason__c (picklist: No Fault Found / Legacy Part / Missing Part), Part_Number__c (Lookup → `Part__c`), Actions_Taken_By_Dealer__c (LongTextArea), Global_Main_Area__c / Global_Sub_Area__c (picklists for failure-area taxonomy).
+- **`Asset`**: Tracked in source (standard + custom fields). Customs: Model_Name__c (Lookup → `Model__c`), Machine_Type__c (formula → `Product2.Type__c` via TEXT()), Series__c (formula → `Product2.Series__c`), Unit_of_Measure__c (picklist), Usage__c (Number 18,0), Engine_Serial_Number__c (Text 80).
+- **`Product2`**: Rating__c, Type__c (picklist, source for `Asset.Machine_Type__c` formula), Series__c (source for `Asset.Series__c` formula).
+- **`Account`**: Account_Summary__c, Active__c, SLA__c, etc.
+- **`Order`**: Return_Status__c.
+- **`Contact`**: Languages__c, Level__c.
+- **`Lead`**, **`Opportunity`**: various sales/marketing fields.
 
 ### Flows (`force-app/main/default/flows/`)
 
-Three flows are included:
-- `Create_a_Task_Flow` — creates a Task record
-- `Update_Soft_Drink_Flow` — updates a Soft Drink record
-- `Initiate_Return` — handles return/refund logic
+Three auto-launched flows:
+- `Create_a_Task_Flow` — creates a Task; sets ActivityDate to today, owner to current user; inputs: subject, relatedId
+- `Update_Soft_Drink_Flow` — sets a `Soft_Drink__c` record to "Expired" and bulk-updates related `Soft_Drink_Order__c` records to "Cancelled"
+- `Initiate_Return` — validates order is within 30-day return window, then sets `Order.Return_Status__c` to "Initiated"
 
 ### External Integrations
 

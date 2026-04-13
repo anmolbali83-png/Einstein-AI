@@ -54,8 +54,7 @@
 		<name>CustomField</name>
 	</types>
 	<types>
-		<members>Soft_Drink_Order__c</members>
-		<members>Soft_Drink__c</members>
+		<members>Asset</members>
 		<name>CustomObject</name>
 	</types>
 	<types>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Global_Sub_Area__c</fullName>
+    <externalId>false</externalId>
+    <label>Global Sub Area</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <controllingField>Global_Main_Area__c</controllingField>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>4WD Clutch/Coupler Systems (0101)</fullName>
+                <default>false</default>
+                <label>4WD Clutch/Coupler Systems (0101)</label>
+            </value>
+            <value>
+                <fullName>Brake System Air (0105)</fullName>
+                <default>false</default>
+                <label>Brake System Air (0105)</label>
+            </value>
+            <value>
+                <fullName>Axle Shafts/Bearings/Seals (0102)</fullName>
+                <default>false</default>
+                <label>Axle Shafts/Bearings/Seals (0102)</label>
+            </value>
+            <value>
+                <fullName>Axle Shafts/Bearings/Seals (0103)</fullName>
+                <default>false</default>
+                <label>Axle Shafts/Bearings/Seals (0103)</label>
+            </value>
+            <value>
+                <fullName>Frame/Mounts/Wings (0205)</fullName>
+                <default>false</default>
+                <label>Frame/Mounts/Wings (0205)</label>
+            </value>
+            <value>
+                <fullName>Implement Drawbars/Hitches (0208)</fullName>
+                <default>false</default>
+                <label>Implement Drawbars/Hitches (0208)</label>
+            </value>
+        </valueSetDefinition>
+        <valueSettings>
+            <controllingFieldValue>Aftermarket Technologies (500.034)</controllingFieldValue>
+            <valueName>4WD Clutch/Coupler Systems (0101)</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Aftermarket Technologies (500.034)</controllingFieldValue>
+            <valueName>Brake System Air (0105)</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Axles/Drawbars/Auto Pickup Hitches (000.001)</controllingFieldValue>
+            <valueName>Axle Shafts/Bearings/Seals (0102)</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Axles/Drawbars/Auto Pickup Hitches (000.001)</controllingFieldValue>
+            <valueName>Axle Shafts/Bearings/Seals (0103)</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Body/Chassis &amp; Frame (100.002)</controllingFieldValue>
+            <valueName>Frame/Mounts/Wings (0205)</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Body/Chassis &amp; Frame (100.002)</controllingFieldValue>
+            <valueName>Implement Drawbars/Hitches (0208)</valueName>
+        </valueSettings>
+    </valueSet>
+</CustomField>
