@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Brand__c</fullName>
+    <externalId>false</externalId>
+    <label>Brand</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Massey Ferguson</fullName>
+                <default>false</default>
+                <label>Massey Ferguson</label>
+            </value>
+            <value>
+                <fullName>Fendt</fullName>
+                <default>false</default>
+                <label>Fendt</label>
+            </value>
+            <value>
+                <fullName>Valtra</fullName>
+                <default>false</default>
+                <label>Valtra</label>
+            </value>
+            <value>
+                <fullName>Challenger</fullName>
+                <default>false</default>
+                <label>Challenger</label>
+            </value>
+            <value>
+                <fullName>Gleaner</fullName>
+                <default>false</default>
+                <label>Gleaner</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
