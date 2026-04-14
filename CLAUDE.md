@@ -33,7 +33,20 @@ npx sfdx-lwc-jest -- --testPathPattern=flexTemplateLwc # Run a single component'
 > **Tooling rule — use MCP servers first:**
 > - **Salesforce activities** (deploy, retrieve, SOQL, Apex tests, code analyzer, metadata exploration, LWC/LDS guidance, etc.): use the **Salesforce MCP** tools (`mcp__Salesforce__deploy_metadata`, `mcp__Salesforce__retrieve_metadata`, `mcp__Salesforce__run_soql_query`, `mcp__Salesforce__run_apex_test`, `mcp__Salesforce__run_code_analyzer`, `mcp__Salesforce__guide_lwc_development`, etc.).
 > - **Git / GitHub activities** (branches, PRs, issues, commits on remote, file operations on GitHub): use the **GitHub MCP** tools (`mcp__github__create_pull_request`, `mcp__github__create_branch`, `mcp__github__create_issue`, `mcp__github__get_pull_request`, `mcp__github__list_pull_requests`, `mcp__github__merge_pull_request`, `mcp__github__create_or_update_file`, etc.).
+> - **Jira activities** (issues, sprints, boards, comments): use the **Atlassian MCP** tools (`mcp__mcp-atlassian__jira_get_issue`, `mcp__mcp-atlassian__jira_search`, etc.).
 > - Fall back to the `sf` / `git` / `gh` CLI commands below **only if** the corresponding MCP is unavailable or fails after a real attempt.
+
+> **Jira issue fetching rule:**
+> When asked to read, fetch, or review a Jira issue, **always** make both of these calls **in parallel**:
+> 1. `mcp__mcp-atlassian__jira_get_issue` with `fields: "*all"` — fetches every field (summary, description, acceptance criteria, custom fields, etc.), not just the default essentials.
+> 2. `mcp__mcp-atlassian__jira_get_issue_images` — fetches all attached images (design mockups, screenshots, wireframes) so they can be viewed and described inline.
+>
+> Never fetch an issue with default/partial fields. Never skip the image call — assume every ticket may contain visual attachments that are critical context.
+>
+> **UI generation from Jira issues:**
+> When asked to build a UI component from a Jira issue, follow this priority:
+> 1. **If images are attached** — build the UI to match the attached design mockup/wireframe as closely as possible.
+> 2. **If no images are attached** — design and build the UI based on the story description and acceptance criteria from the issue.
 
 ```bash
 sf auth web login                                                              # Authenticate to org (no MCP equivalent)
