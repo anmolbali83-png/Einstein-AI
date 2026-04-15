@@ -2,9 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Series__c</fullName>
     <externalId>false</externalId>
-    <formula>Asset.Product2.Series__c</formula>
-    <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
     <label>Series</label>
+    <length>255</length>
     <required>false</required>
     <type>Text</type>
     <unique>false</unique>

@@ -2,12 +2,9 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Machine_Usage__c</fullName>
     <externalId>false</externalId>
-    <formula>Asset.Usage__c</formula>
-    <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
     <label>Machine Usage</label>
-    <precision>18</precision>
+    <length>255</length>
     <required>false</required>
-    <scale>0</scale>
-    <type>Number</type>
+    <type>Text</type>
     <unique>false</unique>
 </CustomField>

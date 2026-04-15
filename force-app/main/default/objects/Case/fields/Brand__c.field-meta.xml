@@ -2,9 +2,8 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Brand__c</fullName>
     <externalId>false</externalId>
-    <formula>Asset.Model_Name__r.Brand_Name__r.Name</formula>
-    <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
     <label>Brand</label>
+    <length>255</length>
     <required>false</required>
     <type>Text</type>
     <unique>false</unique>
