@@ -124,9 +124,11 @@ Case (standard + custom fields)
 
 ---
 
-## 6. Apex Controller — Data Retrieval
+## 6. Shared Apex Controller — `CaseCreateController`
 
-### 6.1 Method: `getProductInfoFromAsset(Id assetId)`
+All `caseCreate` LWC sections share a single Apex controller: `CaseCreateController.cls`. Each story adds methods to this class. See the full method inventory across stories in [MP-5 TDD](MP-5-Case-Information-Section.md#7-shared-apex-controller--casecreatecontroller).
+
+### 6.1 Method: `getProductInfoFromAsset(String serialNumber)`
 
 Called when a valid Asset/Serial Number is found. Returns a wrapper with all product information fields.
 
@@ -198,7 +200,7 @@ LIMIT 1
 
 ### 6.3 Method: `saveCaseAsDraft(Case caseRecord)`
 
-Persists the Case with Status = 'Draft'. All Product Information fields are saved to the corresponding Case fields listed in section 4.
+Persists the Case with Status = 'Draft'. The LWC builds ONE Case sObject with fields from ALL sections (Product Information, Case Information, etc.) and passes it to this single method. No section-specific logic lives in Apex — the controller is a thin persistence layer.
 
 ---
 
@@ -304,13 +306,13 @@ const caseRecord = {
 
 ## 10. Files to Create / Modify
 
-| File                                                          | Action | Purpose                                      |
-|---------------------------------------------------------------|--------|----------------------------------------------|
-| `force-app/main/default/classes/CaseCreateController.cls`     | Create | Apex controller: asset lookup, part lookup, save |
-| `force-app/main/default/classes/CaseCreateController.cls-meta.xml` | Create | Apex metadata                               |
-| `force-app/main/default/lwc/caseCreate/caseCreate.html`      | Modify | Wire data bindings, conditional rendering     |
-| `force-app/main/default/lwc/caseCreate/caseCreate.js`        | Modify | Import Apex methods, add reactive properties  |
-| `force-app/main/default/lwc/caseCreate/caseCreate.css`       | Modify | Success message styling, read-only field styling |
+| File                                                          | Action | Purpose                                                  |
+|---------------------------------------------------------------|--------|----------------------------------------------------------|
+| `force-app/main/default/classes/CaseCreateController.cls`     | Create | **Shared** Apex controller: asset lookup, part lookup, save, submit (shared with MP-5) |
+| `force-app/main/default/classes/CaseCreateController.cls-meta.xml` | Create | Apex metadata                                           |
+| `force-app/main/default/lwc/caseCreate/caseCreate.html`      | Modify | Wire data bindings, conditional rendering                 |
+| `force-app/main/default/lwc/caseCreate/caseCreate.js`        | Modify | Import Apex methods, add reactive properties              |
+| `force-app/main/default/lwc/caseCreate/caseCreate.css`       | Modify | Success message styling, read-only field styling          |
 
 ---
 
@@ -322,3 +324,14 @@ const caseRecord = {
 - `Product2` standard object with `Type__c` (Picklist) and `Series__c` (Text) custom fields
 - `Part__c` custom object with `Part_Description__c` field
 - All Case custom fields from section 4 must be deployed (already done)
+
+---
+
+## 12. Cross-Story Reference
+
+| Story | Section              | Shared Artifact                    |
+|-------|----------------------|------------------------------------|
+| MP-4  | Product Information  | `CaseCreateController.cls`, `caseCreate` LWC |
+| MP-5  | Case Information     | `CaseCreateController.cls`, `caseCreate` LWC |
+
+Both stories contribute methods to **one** `CaseCreateController` and **one** `caseCreate` LWC component. The `saveCaseAsDraft` method persists fields from all sections in a single DML call. See [MP-5 TDD](MP-5-Case-Information-Section.md) for the Case Information section design.
