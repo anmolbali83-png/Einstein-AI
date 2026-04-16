@@ -466,7 +466,7 @@ public with sharing class FormVersionCloneAction {
 
 ### 9.2 Page Layout Update
 
-Add `Form__c.New_Version` to the Form__c page layout's "Salesforce Mobile and Lightning Experience Actions" section.
+The Quick Action must be added to the Form__c page layout's `<platformActionList>` so it appears in the highlights panel on the record page. See section 14 for the full deployment checklist.
 
 ---
 
@@ -495,7 +495,8 @@ Add `Form__c.New_Version` to the Form__c page layout's "Salesforce Mobile and Li
 | `force-app/main/default/lwc/formVersionHistory/formVersionHistory.js-meta.xml`  | Create | LWC metadata: target `lightning__FlowScreen`        |
 | `force-app/main/default/flows/Form_Version_Manager.flow-meta.xml`              | Create | Screen Flow: orchestration                         |
 | `force-app/main/default/quickActions/Form__c.New_Version.quickAction-meta.xml`  | Create | Quick Action: button on Form__c page               |
-| `force-app/main/default/layouts/Form__c-Form Layout.layout-meta.xml`           | Modify | Add "New Version" to actions section               |
+| `force-app/main/default/layouts/Form__c-Form Layout.layout-meta.xml`           | Modify | Add "New Version" to `platformActionList` section  |
+| `force-app/main/default/permissionsets/Form_Version_Access.permissionset-meta.xml` | Create | Permission Set: Apex class + object/field access for non-admin users |
 
 ---
 
@@ -518,3 +519,217 @@ Add `Form__c.New_Version` to the Form__c page layout's "Salesforce Mobile and Li
 - Screen Flows must be enabled in the org
 - Quick Actions must be enabled on the Form__c page layout
 - LWC Flow Screen components require API version 59.0+
+
+---
+
+## 14. Deployment & Configuration Checklist
+
+Complete these steps in order after all code artifacts are created.
+
+### 14.1 Deploy Code Artifacts
+
+Deploy in dependency order:
+
+| Step | What to deploy                                     | Command / Method                                                |
+|------|----------------------------------------------------|-----------------------------------------------------------------|
+| 1    | `FormVersionCloneAction.cls` + `.cls-meta.xml`     | `sf project deploy start --source-dir force-app/main/default/classes/FormVersionCloneAction.cls` |
+| 2    | `formVersionHistory` LWC (all files)               | `sf project deploy start --source-dir force-app/main/default/lwc/formVersionHistory` |
+| 3    | `Form_Version_Manager` Screen Flow                 | `sf project deploy start --source-dir force-app/main/default/flows/Form_Version_Manager.flow-meta.xml` |
+| 4    | `Form__c.New_Version` Quick Action                 | `sf project deploy start --source-dir force-app/main/default/quickActions/Form__c.New_Version.quickAction-meta.xml` |
+| 5    | Updated `Form__c-Form Layout` page layout          | Deploy via MCP or `sf project deploy start`                     |
+
+### 14.2 Activate the Screen Flow
+
+The Screen Flow must be activated before the Quick Action can invoke it.
+
+- **Via Setup:** Setup → Flows → `Form_Version_Manager` → Activate
+- **Via metadata:** Ensure `<status>Active</status>` in the `.flow-meta.xml` file before deploying
+
+If the flow is deployed as Inactive (draft), the "New Version" button will show an error.
+
+### 14.3 Add Quick Action to Page Layout
+
+The Form__c page layout must include the Quick Action in its `<platformActionList>` section. This controls which buttons appear in the highlights panel on the Lightning Record Page.
+
+**Layout metadata change** — add to `Form__c-Form Layout.layout-meta.xml`:
+
+```xml
+<platformActionList>
+    <platformActionListItems>
+        <actionName>Form__c.New_Version</actionName>
+        <actionType>QuickAction</actionType>
+        <sortOrder>0</sortOrder>
+    </platformActionListItems>
+    <platformActionListItems>
+        <actionName>Edit</actionName>
+        <actionType>StandardButton</actionType>
+        <sortOrder>1</sortOrder>
+    </platformActionListItems>
+    <platformActionListItems>
+        <actionName>Delete</actionName>
+        <actionType>StandardButton</actionType>
+        <sortOrder>2</sortOrder>
+    </platformActionListItems>
+</platformActionList>
+```
+
+Alternatively, add via Lightning App Builder:
+1. Open the Form__c record page in Lightning App Builder
+2. Click the highlights panel
+3. In the right sidebar, click "Add Action"
+4. Search for "New Version" and add it
+5. Save and Activate the page
+
+### 14.4 Lightning Record Page Assignment
+
+If a **custom Lightning Record Page** is used for Form__c:
+- Ensure the **Highlights Panel** component is present on the page (Quick Actions render inside it)
+- Assign the page as org default for Form__c: Lightning App Builder → Activation → Org Default
+
+If using the **default record page** (no custom page):
+- The highlights panel is included automatically; the Quick Action will appear after the layout is deployed
+
+### 14.5 Profile / Permission Set — Apex Class Access
+
+Internal users must have access to the `FormVersionCloneAction` Apex class. Without this, the Flow will throw a runtime error at the Apex action step.
+
+**Option A — Admin Profile (already has access):**
+System Administrators have "Author Apex" permission which grants access to all Apex classes. No action needed.
+
+**Option B — Non-Admin Profiles:**
+Create or update a Permission Set:
+
+```xml
+<!-- force-app/main/default/permissionsets/Form_Version_Access.permissionset-meta.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Form Version Access</label>
+    <description>Grants access to Form versioning Quick Action, Flow, and Apex</description>
+    <classAccesses>
+        <apexClass>FormVersionCloneAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Form__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>true</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Question__c</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Version__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Parent_Form__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Form_Title__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Start_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.End_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Form__c.Objects__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Question__c.Title__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Question__c.Comment__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Question__c.Option__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Question__c.Form__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+</PermissionSet>
+```
+
+After deploying the Permission Set, assign it to the target users/profiles:
+
+```bash
+sf org assign permset --name Form_Version_Access --target-org anmol.bali@tavant.com.pd-tt
+```
+
+### 14.6 Flow Access for Non-Admin Users
+
+If the org restricts Flow access by profile:
+- Setup → Flows → `Form_Version_Manager` → View Details → Add Profile/Permission Set access
+- Or ensure the user's profile has "Run Flows" permission enabled
+
+Admin profiles have this by default.
+
+### 14.7 One-Time Data Fix — Initialize Version__c on Existing Records
+
+Existing Form__c records were created before the versioning feature. Their `Version__c` field is null. The Apex clone logic handles null by treating it as Version 1 (see section 12 — Edge Cases), but for clean data display in the modal, run a one-time update:
+
+```sql
+-- Find forms with null Version__c
+SELECT Id, Name, Version__c FROM Form__c WHERE Version__c = null
+```
+
+```java
+// One-time anonymous Apex script
+List<Form__c> forms = [SELECT Id FROM Form__c WHERE Version__c = null];
+for (Form__c f : forms) {
+    f.Version__c = 1;
+}
+update forms;
+```
+
+This ensures the version history modal shows "Version 1" instead of blank for pre-existing records.
+
+### 14.8 Deployment Order Summary
+
+```
+Step 1:  Deploy Apex class (FormVersionCloneAction)
+Step 2:  Deploy LWC (formVersionHistory)
+Step 3:  Deploy + Activate Screen Flow (Form_Version_Manager)
+Step 4:  Deploy Quick Action (Form__c.New_Version)
+Step 5:  Update + Deploy Page Layout (add Quick Action to platformActionList)
+Step 6:  (Optional) Deploy Permission Set (Form_Version_Access)
+Step 7:  (Optional) Assign Permission Set to users
+Step 8:  (Optional) Assign Lightning Record Page if using custom page
+Step 9:  Run one-time data fix for existing records with null Version__c
+Step 10: Verify: Open a Form record → click "New Version" → confirm modal + clone
+```
