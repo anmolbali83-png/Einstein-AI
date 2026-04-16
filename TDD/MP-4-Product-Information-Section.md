@@ -14,7 +14,7 @@
 
 ## 1. Overview
 
-When a user creates a "Parts Technical Help" support case and provides an Asset/Serial Number, the **Product Information** section auto-populates equipment and product fields from the related Asset record. Some fields are read-only (derived from Asset), some are conditionally editable, and some are fully manual. This document covers the field mapping, data retrieval logic, and UI behavior for the Product Information section only.
+When a user creates a "Parts Technical Help" support case and provides an Asset/Serial Number, the **Product Information** section auto-populates equipment and product fields from the related Asset record. Some fields are read-only (derived from Asset), some are conditionally editable, and some are fully manual. This document covers the field mapping, data retrieval logic, and UI behavior for the Product Information section.
 
 ---
 
@@ -124,11 +124,22 @@ Case (standard + custom fields)
 
 ---
 
-## 6. Shared Apex Controller — `CaseCreateController`
+## 6. Apex Controller — `CaseCreateController`
 
-All `caseCreate` LWC sections share a single Apex controller: `CaseCreateController.cls`. Each story adds methods to this class. See the full method inventory across stories in [MP-5 TDD](MP-5-Case-Information-Section.md#7-shared-apex-controller--casecreatecontroller).
+One shared controller handles the entire `caseCreate` component end-to-end. All sections (Product Information, Case Information, and any future sections) contribute methods to this single class. The controller is a **thin service layer** — the LWC owns field assembly and client-side validation; the controller owns server queries and persistence.
 
-### 6.1 Method: `getProductInfoFromAsset(String serialNumber)`
+**File:** `force-app/main/default/classes/CaseCreateController.cls`
+
+### 6.1 Full Method Inventory
+
+| Method                                         | Purpose                                                              |
+|------------------------------------------------|----------------------------------------------------------------------|
+| `getProductInfoFromAsset(String serialNumber)`  | Searches Asset by serial/name, returns product info wrapper          |
+| `getPartDescription(Id partId)`                 | Returns Part_Description__c for a Part__c record                     |
+| `saveCaseAsDraft(Case caseRecord)`              | Upserts Case with Status = Draft (all sections in one DML)          |
+| `submitCase(Id caseId)`                         | Server-side mandatory field validation + Status transition to Submitted |
+
+### 6.2 Method: `getProductInfoFromAsset(String serialNumber)` — this story
 
 Called when a valid Asset/Serial Number is found. Returns a wrapper with all product information fields.
 
@@ -187,7 +198,7 @@ info.engineSerial  = asset.Engine_Serial_Number__c;
 info.assetId       = asset.Id;
 ```
 
-### 6.2 Method: `getPartDescription(Id partId)`
+### 6.3 Method: `getPartDescription(Id partId)` — this story
 
 Called when Part Number lookup value changes. Returns Part Description.
 
@@ -198,9 +209,44 @@ WHERE Id = :partId
 LIMIT 1
 ```
 
-### 6.3 Method: `saveCaseAsDraft(Case caseRecord)`
+### 6.4 Method: `saveCaseAsDraft(Case caseRecord)` — shared across stories
 
-Persists the Case with Status = 'Draft'. The LWC builds ONE Case sObject with fields from ALL sections (Product Information, Case Information, etc.) and passes it to this single method. No section-specific logic lives in Apex — the controller is a thin persistence layer.
+The LWC builds ONE Case sObject containing fields from **every section** (Product Information, Case Information, etc.) and passes it to this single method. No section-specific logic lives in Apex.
+
+```java
+@AuraEnabled
+public static Id saveCaseAsDraft(Case caseRecord) {
+    caseRecord.Status = 'Draft';
+    upsert caseRecord;
+    return caseRecord.Id;
+}
+```
+
+### 6.5 Method: `submitCase(Id caseId)` — shared across stories
+
+Server-side validation of mandatory fields from all sections, then status transition.
+
+```java
+@AuraEnabled
+public static void submitCase(Id caseId) {
+    Case c = [SELECT Id, Priority, Severity__c, Problem_Description__c,
+                     AssetId
+              FROM Case WHERE Id = :caseId WITH USER_MODE LIMIT 1];
+
+    List<String> errors = new List<String>();
+    if (c.AssetId == null)                        errors.add('Asset is required');
+    if (String.isBlank(c.Priority))               errors.add('Priority is required');
+    if (String.isBlank(c.Severity__c))            errors.add('Severity is required');
+    if (String.isBlank(c.Problem_Description__c)) errors.add('Problem Description is required');
+
+    if (!errors.isEmpty()) {
+        throw new AuraHandledException(String.join(errors, '; '));
+    }
+
+    c.Status = 'Submitted';
+    update c;
+}
+```
 
 ---
 
@@ -212,7 +258,7 @@ Persists the Case with Status = 'Draft'. The LWC builds ONE Case sObject with fi
 
 The component already exists as a static UI shell (built from MP-1 mockup). This story wires the Product Information section to live data.
 
-### 7.2 Key Properties
+### 7.2 Key Properties (Product Information)
 
 ```javascript
 // Asset lookup result
@@ -238,14 +284,15 @@ partDescription = '';       // Read-only, auto-populated
 noPartReason = '';          // Picklist selection
 ```
 
-### 7.3 Wire / Imperative Calls
+### 7.3 Wire / Imperative Calls (Product Information section)
 
 | Trigger                        | Apex Method                    | Action on Response                                          |
 |-------------------------------|-------------------------------|--------------------------------------------------------------|
 | Asset search button click      | `getProductInfoFromAsset`     | Populate Row 1 + Row 2 fields, set `assetFound = true`      |
 | Clear Search click             | (none — client-side only)     | Clear all product info fields, set `assetFound = false`      |
 | Part Number lookup change      | `getPartDescription`          | Populate `partDescription`, or clear if Part removed         |
-| Save button click              | `saveCaseAsDraft`             | Build Case sObject from all fields, save with Status = Draft |
+| Save button click              | `saveCaseAsDraft`             | Build Case sObject from ALL sections, save with Status = Draft |
+| Submit button click            | `submitCase`                  | Server-side validation + status transition to Submitted      |
 
 ### 7.4 UI State Matrix
 
@@ -260,24 +307,32 @@ noPartReason = '';          // Picklist selection
 
 ## 8. Case Field Assignment on Save
 
-When the user clicks **Save**, build the Case sObject:
+When the user clicks **Save** or **Submit**, the LWC builds ONE Case sObject with fields from **all sections** and calls `saveCaseAsDraft`:
 
 ```javascript
 const caseRecord = {
-    RecordTypeId:             '<Parts Technical Help RecordType Id>',
-    AssetId:                  this.assetId,
-    Status:                   'Draft',
-    Brand__c:                 this.brand,
-    Machine_Type__c:          this.machineType,
-    Series__c:                this.series,
-    Model_Number__c:          this.modelNumber,
-    Unit_of_Measure__c:       this.unitOfMeasure,
-    Machine_Usage__c:         this.machineUsage,
-    Used_With__c:             this.usedWith,
-    Engine_Serial_Number__c:  this.engineSerial,
-    Part_Number__c:           this.partNumberId,
-    Part_Description__c:      this.partDescription,
-    No_Causal_Part_Reason__c: this.noPartReason
+    // --- Product Information (this story) ---
+    RecordTypeId:               this.recordTypeId,
+    AssetId:                    this.assetId,
+    Brand__c:                   this.brand,
+    Machine_Type__c:            this.machineType,
+    Series__c:                  this.series,
+    Model_Number__c:            this.modelNumber,
+    Unit_of_Measure__c:         this.unitOfMeasure,
+    Machine_Usage__c:           this.machineUsage,
+    Used_With__c:               this.usedWith,
+    Engine_Serial_Number__c:    this.engineSerial,
+    Part_Number__c:             this.partNumberId,
+    Part_Description__c:        this.partDescription,
+    No_Causal_Part_Reason__c:   this.noPartReason,
+
+    // --- Case Information (MP-5) ---
+    Global_Main_Area__c:        this.mainArea,
+    Global_Sub_Area__c:         this.subArea,
+    Priority:                   this.priority,
+    Severity__c:                this.severity,
+    Problem_Description__c:     this.problemDescription,
+    Actions_Taken_By_Dealer__c: this.actionsTakenByDealer
 };
 ```
 
@@ -308,7 +363,7 @@ const caseRecord = {
 
 | File                                                          | Action | Purpose                                                  |
 |---------------------------------------------------------------|--------|----------------------------------------------------------|
-| `force-app/main/default/classes/CaseCreateController.cls`     | Create | **Shared** Apex controller: asset lookup, part lookup, save, submit (shared with MP-5) |
+| `force-app/main/default/classes/CaseCreateController.cls`     | Create | Shared Apex controller for the entire caseCreate component |
 | `force-app/main/default/classes/CaseCreateController.cls-meta.xml` | Create | Apex metadata                                           |
 | `force-app/main/default/lwc/caseCreate/caseCreate.html`      | Modify | Wire data bindings, conditional rendering                 |
 | `force-app/main/default/lwc/caseCreate/caseCreate.js`        | Modify | Import Apex methods, add reactive properties              |
@@ -324,14 +379,4 @@ const caseRecord = {
 - `Product2` standard object with `Type__c` (Picklist) and `Series__c` (Text) custom fields
 - `Part__c` custom object with `Part_Description__c` field
 - All Case custom fields from section 4 must be deployed (already done)
-
----
-
-## 12. Cross-Story Reference
-
-| Story | Section              | Shared Artifact                    |
-|-------|----------------------|------------------------------------|
-| MP-4  | Product Information  | `CaseCreateController.cls`, `caseCreate` LWC |
-| MP-5  | Case Information     | `CaseCreateController.cls`, `caseCreate` LWC |
-
-Both stories contribute methods to **one** `CaseCreateController` and **one** `caseCreate` LWC component. The `saveCaseAsDraft` method persists fields from all sections in a single DML call. See [MP-5 TDD](MP-5-Case-Information-Section.md) for the Case Information section design.
+- `RecordType` for "Parts Technical Help" must exist on Case
