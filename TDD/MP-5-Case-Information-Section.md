@@ -50,7 +50,7 @@ Case
  |-- Global_Sub_Area__c ......... Picklist (dependent on Global_Main_Area__c)
  |-- Priority ................... Standard Picklist (custom values)
  |-- Severity__c ................ Picklist (NEW — to be created)
- |-- Problem_Description__c ..... LongTextArea (NEW — to be created, 500 char max)
+ |-- Description ................. Standard LongTextArea (32000 chars, enforce 500 max in UI)
  |-- Actions_Taken_By_Dealer__c . LongTextArea (existing, 32768 chars)
 ```
 
@@ -67,12 +67,17 @@ Case
 | 3 | `Priority`                   | Standard Picklist | Standard Case field. Values to be configured: 1-Critical, 2-High, 3-Medium, 4-Low. |
 | 4 | `Actions_Taken_By_Dealer__c` | LongTextArea(32768) | Existing. 5 visible lines.                               |
 
-### 4.2 New fields (to be created)
+### 4.2 Existing standard field (reused)
+
+| # | Case Field API Name          | Type                | Notes                                                                                |
+|---|------------------------------|---------------------|--------------------------------------------------------------------------------------|
+| 5 | `Description`                | Standard LongTextArea(32000) | Standard Case field. Enforce 500 character max via `maxlength` in LWC, not at field level. |
+
+### 4.3 New field (to be created)
 
 | # | Case Field API Name          | Type                | Values / Constraints                                                                 |
 |---|------------------------------|---------------------|--------------------------------------------------------------------------------------|
-| 5 | `Severity__c`                | Picklist            | A-Machine Immobilized, B-Impaired Functionality, C-Nuisance, D-Suitability for Intended purpose |
-| 6 | `Problem_Description__c`     | LongTextArea(500)   | 500 character max. visibleLines: 5.                                                  |
+| 6 | `Severity__c`                | Picklist            | A-Machine Immobilized, B-Impaired Functionality, C-Nuisance, D-Suitability for Intended purpose |
 
 ---
 
@@ -84,7 +89,7 @@ Case
 | Sub Area                | `Global_Sub_Area__c`        | No       | Yes      | Dependent picklist. Options filtered by selected Main Area. Disabled when Main Area is blank.|
 | Priority                | `Priority`                  | Yes (*)  | Yes      | Picklist. Values: 1-Critical, 2-High, 3-Medium, 4-Low.                                    |
 | Severity                | `Severity__c`               | Yes (*)  | Yes      | Picklist. Values: A-Machine Immobilized, B-Impaired Functionality, C-Nuisance, D-Suitability for Intended purpose. |
-| Problem Description     | `Problem_Description__c`    | Yes (*)  | Yes      | LongTextArea. 500 character max. Show remaining character count in UI.                     |
+| Problem Description     | `Description`             | Yes (*)  | Yes      | Standard Case.Description field. Enforce 500 char max via `maxlength` in LWC. Show remaining character count. |
 | Actions Taken by Dealer | `Actions_Taken_By_Dealer__c`| No       | Yes      | LongTextArea. Free-text, no character limit enforced in UI (field allows 32768).           |
 
 ---
@@ -177,7 +182,7 @@ Called when the user clicks **Submit**. Validates mandatory fields from all sect
 ```java
 @AuraEnabled
 public static void submitCase(Id caseId) {
-    Case c = [SELECT Id, Priority, Severity__c, Problem_Description__c,
+    Case c = [SELECT Id, Priority, Severity__c, Description,
                      AssetId
               FROM Case WHERE Id = :caseId WITH USER_MODE LIMIT 1];
 
@@ -185,7 +190,7 @@ public static void submitCase(Id caseId) {
     if (c.AssetId == null)                        errors.add('Asset is required');
     if (String.isBlank(c.Priority))               errors.add('Priority is required');
     if (String.isBlank(c.Severity__c))            errors.add('Severity is required');
-    if (String.isBlank(c.Problem_Description__c)) errors.add('Problem Description is required');
+    if (String.isBlank(c.Description)) errors.add('Problem Description is required');
 
     if (!errors.isEmpty()) {
         throw new AuraHandledException(String.join(errors, '; '));
@@ -271,7 +276,7 @@ mainArea = '';
 subArea = '';
 priority = '';
 severity = '';
-problemDescription = '';
+description = '';              // maps to standard Case.Description
 actionsTakenByDealer = '';
 
 // Computed
@@ -279,8 +284,8 @@ get isSubAreaDisabled() {
     return !this.mainArea;
 }
 
-get problemDescriptionRemaining() {
-    return 500 - (this.problemDescription?.length || 0);
+get descriptionRemaining() {
+    return 500 - (this.description?.length || 0);
 }
 ```
 
@@ -330,7 +335,7 @@ const caseRecord = {
     Global_Sub_Area__c:         this.subArea,
     Priority:                   this.priority,
     Severity__c:                this.severity,
-    Problem_Description__c:     this.problemDescription,
+    Description:     this.description,
     Actions_Taken_By_Dealer__c: this.actionsTakenByDealer
 };
 ```
@@ -345,7 +350,7 @@ const caseRecord = {
 | 2  | Sub Areas filtered by Main Area                                                       | `getPicklistValuesByRecordType` wire + client-side dependency map; Sub Area resets on Main Area change |
 | 3  | Priority values: 1-Critical, 2-High, 3-Medium, 4-Low — mandatory                    | Standard `Priority` picklist with custom values; `required` attribute on `lightning-combobox`   |
 | 4  | Severity values: A-Machine Immobilized, B-Impaired Functionality, C-Nuisance, D-Suitability — mandatory | New `Severity__c` picklist; `required` attribute on `lightning-combobox`                        |
-| 5  | Problem Description mandatory, 500 char max                                           | `Problem_Description__c` LongTextArea(500); `required` + `maxlength="500"` on `lightning-textarea`; show remaining character count |
+| 5  | Problem Description mandatory, 500 char max                                           | Standard `Case.Description`; `required` + `maxlength="500"` on `lightning-textarea`; show remaining character count |
 | 6  | Actions Taken by Dealer optional                                                      | `Actions_Taken_By_Dealer__c` LongTextArea; no `required` attribute                             |
 | 7  | Priority, Severity, Problem Description are mandatory                                 | `required` attribute in HTML + server-side validation in `submitCase`                           |
 | 8  | Main Area, Sub Area, Actions Taken by Dealer are optional                             | No `required` attribute; note mockup discrepancy (see section 2)                               |
@@ -358,7 +363,8 @@ const caseRecord = {
 | File                                                                  | Action | Purpose                                        |
 |-----------------------------------------------------------------------|--------|-------------------------------------------------|
 | `force-app/main/default/objects/Case/fields/Severity__c.field-meta.xml` | Create | Picklist: A-Machine Immobilized, B-Impaired Functionality, C-Nuisance, D-Suitability for Intended purpose |
-| `force-app/main/default/objects/Case/fields/Problem_Description__c.field-meta.xml` | Create | LongTextArea(500), visibleLines 5               |
+
+Problem Description uses the standard `Case.Description` field — no custom field creation needed. The 500 character limit is enforced in the LWC via `maxlength`, not at the field level.
 
 ### Priority picklist customization
 
@@ -370,8 +376,7 @@ The standard `Case.Priority` field needs its picklist values updated to: `1-Crit
 
 | File                                                                        | Action | Purpose                                              |
 |-----------------------------------------------------------------------------|--------|------------------------------------------------------|
-| `force-app/main/default/objects/Case/fields/Severity__c.field-meta.xml`     | Create | Severity picklist field                              |
-| `force-app/main/default/objects/Case/fields/Problem_Description__c.field-meta.xml` | Create | Problem Description textarea (500 char max)         |
+| `force-app/main/default/objects/Case/fields/Severity__c.field-meta.xml`     | Create | Severity picklist field (already deployed)            |
 | `force-app/main/default/classes/CaseCreateController.cls`                   | Modify | Add `submitCase` method to shared controller         |
 | `force-app/main/default/lwc/caseCreate/caseCreate.html`                    | Modify | Wire Case Information fields, dependent picklist     |
 | `force-app/main/default/lwc/caseCreate/caseCreate.js`                      | Modify | Add picklist wire, dependency map, validation logic  |
@@ -386,7 +391,8 @@ The standard `Case.Priority` field needs its picklist values updated to: `1-Crit
 - `Product2` standard object with `Type__c` (Picklist) and `Series__c` (Text) custom fields
 - `Part__c` custom object with `Part_Description__c` field
 - All Case custom fields from Product Information section must be deployed (already done)
-- `Severity__c` and `Problem_Description__c` fields must be deployed before LWC implementation
+- `Severity__c` field must be deployed before LWC implementation (already deployed)
+- Standard `Case.Description` field used for Problem Description (no deployment needed)
 - Standard `Case.Priority` picklist values must be configured with story-specific values
 - `Global_Main_Area__c` / `Global_Sub_Area__c` dependent picklist configuration must be complete with all production values (current source only has 3 Main Areas and 6 Sub Areas — may need expansion)
 - `RecordType` for "Parts Technical Help" must exist on Case

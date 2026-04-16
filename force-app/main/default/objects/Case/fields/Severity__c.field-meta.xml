@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Severity__c</fullName>
+    <externalId>false</externalId>
+    <label>Severity</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>A-Machine Immobilized</fullName>
+                <default>false</default>
+                <label>A-Machine Immobilized</label>
+            </value>
+            <value>
+                <fullName>B-Impaired Functionality</fullName>
+                <default>false</default>
+                <label>B-Impaired Functionality</label>
+            </value>
+            <value>
+                <fullName>C-Nuisance</fullName>
+                <default>false</default>
+                <label>C-Nuisance</label>
+            </value>
+            <value>
+                <fullName>D-Suitability for Intended purpose</fullName>
+                <default>false</default>
+                <label>D-Suitability for Intended purpose</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

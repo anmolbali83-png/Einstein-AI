@@ -229,7 +229,7 @@ Server-side validation of mandatory fields from all sections, then status transi
 ```java
 @AuraEnabled
 public static void submitCase(Id caseId) {
-    Case c = [SELECT Id, Priority, Severity__c, Problem_Description__c,
+    Case c = [SELECT Id, Priority, Severity__c, Description,
                      AssetId
               FROM Case WHERE Id = :caseId WITH USER_MODE LIMIT 1];
 
@@ -237,7 +237,7 @@ public static void submitCase(Id caseId) {
     if (c.AssetId == null)                        errors.add('Asset is required');
     if (String.isBlank(c.Priority))               errors.add('Priority is required');
     if (String.isBlank(c.Severity__c))            errors.add('Severity is required');
-    if (String.isBlank(c.Problem_Description__c)) errors.add('Problem Description is required');
+    if (String.isBlank(c.Description)) errors.add('Problem Description is required');
 
     if (!errors.isEmpty()) {
         throw new AuraHandledException(String.join(errors, '; '));
@@ -331,7 +331,7 @@ const caseRecord = {
     Global_Sub_Area__c:         this.subArea,
     Priority:                   this.priority,
     Severity__c:                this.severity,
-    Problem_Description__c:     this.problemDescription,
+    Description:     this.description,
     Actions_Taken_By_Dealer__c: this.actionsTakenByDealer
 };
 ```
