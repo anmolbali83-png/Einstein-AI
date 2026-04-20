@@ -21,5 +21,17 @@
           "env": {
             "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
           }
+      },"mcp-atlassian": {
+        "command": "uvx",
+        "args": [
+          "mcp-atlassian"
+        ],
+        "env": {
+          "UV_NATIVE_TLS": "true",
+          "JIRA_URL": "https://sahasuman0617.atlassian.net/",
+          "JIRA_USERNAME": "anmolbali83@gmail.com",
+          "JIRA_API_TOKEN": "ATATT3xFfGF00UbsdwGSTwojW6M3nnu9Jcvpy2SsaFZdZvW2C2subRQJzfLfCDZV1tKdeLeHYN6xRcIoUv3yAEvuZ1Cn3hCWF2-sfl-tdxP5a882d5Uj3vTybZSSX6FpA5oYhgJRgUQIypPJQ-45WHu7--toxoFoUW18NUSpDfhgLp_c9Pi4xis=73F0856B"
+        }
       }
+}
 }

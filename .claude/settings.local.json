@@ -18,7 +18,24 @@
       "Bash(sf project:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "WebFetch(domain:www.agcocorp.com)",
+      "mcp__Salesforce__run_soql_query",
+      "mcp__Salesforce__deploy_metadata",
+      "Bash(sf apex:*)",
+      "Bash(sf data:*)",
+      "Bash(\"/c/Program Files/sfdx/bin/sf\" data create record --sobject \"Brand__c\" --values \"Name='Fendt' Brand_Code__c='FENDT'\" --target-org \"anmol.bali@tavant.com.pd-tt\")",
+      "Bash(sf:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\);const j=JSON.parse\\(d\\);console.log\\('DeveloperName:',j.DeveloperName\\);console.log\\('TableEnumOrId:',j.TableEnumOrId\\);console.log\\('FullName:',j.FullName\\);console.log\\('NamespacePrefix:',j.NamespacePrefix\\);console.log\\('ManageableState:',j.ManageableState\\)\")",
+      "mcp__Salesforce__retrieve_metadata",
+      "Bash(where uvx:*)",
+      "Bash(uvx:*)",
+      "Bash(JIRA_URL=\"https://sahasuman0617.atlassian.net/\" JIRA_USERNAME=\"anmolbali83@gmail.com\" JIRA_API_TOKEN=\"ATATT3xFfGF00UbsdwGSTwojW6M3nnu9Jcvpy2SsaFZdZvW2C2subRQJzfLfCDZV1tKdeLeHYN6xRcIoUv3yAEvuZ1Cn3hCWF2-sfl-tdxP5a882d5Uj3vTybZSSX6FpA5oYhgJRgUQIypPJQ-45WHu7--toxoFoUW18NUSpDfhgLp_c9Pi4xis=73F0856B\" uvx mcp-atlassian)",
+      "Bash(UV_NATIVE_TLS=true JIRA_URL=\"https://sahasuman0617.atlassian.net/\" JIRA_USERNAME=\"anmolbali83@gmail.com\" JIRA_API_TOKEN=\"ATATT3xFfGF00UbsdwGSTwojW6M3nnu9Jcvpy2SsaFZdZvW2C2subRQJzfLfCDZV1tKdeLeHYN6xRcIoUv3yAEvuZ1Cn3hCWF2-sfl-tdxP5a882d5Uj3vTybZSSX6FpA5oYhgJRgUQIypPJQ-45WHu7--toxoFoUW18NUSpDfhgLp_c9Pi4xis=73F0856B\" uvx mcp-atlassian)",
+      "mcp__mcp-atlassian__jira_get_issue",
+      "mcp__mcp-atlassian__jira_get_issue_images"
     ]
   }
 }
