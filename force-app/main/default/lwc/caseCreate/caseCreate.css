@@ -3,8 +3,16 @@
     background: #ffffff;
     border: 1px solid #dddbda;
     border-radius: 4px;
-    position: relative;
-    padding-bottom: 3rem;
+}
+
+/* ===== Title bar ===== */
+.title-bar {
+    background: #2b2826;
+    color: #ffffff;
+    text-align: center;
+    padding: 0.75rem 1rem;
+    font-size: 1.125rem;
+    font-weight: 600;
 }
 
 /* ===== Header ===== */
@@ -13,11 +21,9 @@
 }
 
 .case-type-label {
-    font-size: 0.6875rem;
-    color: #706e6b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 400;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #080707;
 }
 
 .case-number {
@@ -34,15 +40,6 @@
 
 .status-value {
     font-weight: 600;
-    color: #080707;
-}
-
-.feedback-banner-col {
-    max-width: 40%;
-}
-
-.feedback-banner-text {
-    font-size: 0.8125rem;
     color: #080707;
 }
 
@@ -107,67 +104,37 @@
     padding: 0 1rem 1rem 1rem;
 }
 
-/* ===== Dealer section ===== */
-.callback-help-text {
-    font-size: 0.6875rem;
-    color: #706e6b;
-    line-height: 1.4;
-}
-
-/* ===== Attachments ===== */
-.upload-area {
-    border: 2px dashed #dddbda;
-    border-radius: 4px;
-    padding: 1rem;
-    text-align: center;
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.file-tile {
-    display: flex;
-    align-items: center;
-    background: #f3f2f2;
-    border: 1px solid #dddbda;
-    border-radius: 4px;
-    padding: 0.375rem 0.5rem;
-}
-
-.file-name {
-    flex: 1;
+/* ===== Asset section ===== */
+.clear-search-link {
+    background: none;
+    border: none;
+    color: #2e844a;
+    cursor: pointer;
     font-size: 0.8125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-left: 0.25rem;
+    font-family: inherit;
+    padding: 0;
+    font-weight: 600;
 }
 
-.file-delete-btn {
-    flex-shrink: 0;
-    margin-left: auto;
+.clear-search-link:hover {
+    text-decoration: underline;
 }
 
-/* ===== Feedback widget ===== */
-.feedback-widget {
-    position: absolute;
-    bottom: 0.75rem;
-    right: 1rem;
+.asset-found-msg {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    background: #ffffff;
-    padding: 0.375rem 0.75rem;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 1;
-}
-
-.feedback-label {
+    color: #2e844a;
     font-size: 0.8125rem;
     font-weight: 600;
-    margin-right: 0.25rem;
-    color: #080707;
+}
+
+/* ===== Footer buttons ===== */
+.footer-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f3f2f2;
+    border-top: 1px solid #dddbda;
 }

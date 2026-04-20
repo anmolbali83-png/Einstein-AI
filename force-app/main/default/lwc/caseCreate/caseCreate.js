@@ -1,143 +1,214 @@
 import { LightningElement } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import findAssetBySerial from '@salesforce/apex/CaseCreateController.findAssetBySerial';
+import getPartDescription from '@salesforce/apex/CaseCreateController.getPartDescription';
+import saveCaseAsDraft from '@salesforce/apex/CaseCreateController.saveCaseAsDraft';
 
 export default class CaseCreate extends LightningElement {
-    /* ---------- section toggle state ---------- */
+    /* ========== Section toggle state ========== */
     assetOpen = true;
     productOpen = true;
-    caseInfoOpen = true;
-    commentsOpen = true;
-    dealerOpen = true;
-    attachmentsOpen = true;
-    resolveOpen = true;
 
-    /* ---------- field state ---------- */
+    /* ========== Asset / Serial Number ========== */
+    serialNumber = '';
     assetNotApplicable = false;
-    requestCallback = true;
+    assetId;
+    assetFound = false;
+    isSearching = false;
 
-    /* ---------- static attachment list ---------- */
-    dummyFiles = [
-        { id: '1', name: 'Filename.png' },
-        { id: '2', name: 'Filename.png' },
-        { id: '3', name: 'Filename.png' },
-        { id: '4', name: 'Filename.png' },
-        { id: '5', name: 'Filename.png' }
-    ];
+    /* ========== Product Info: Row 1 (disabled text inputs) ========== */
+    brand = '';
+    machineType = '';
+    series = '';
+    modelNumber = '';
 
-    get fileCount() {
-        return this.dummyFiles.length;
+    /* ========== Product Info: Row 2 (conditional) ========== */
+    unitOfMeasure = '';
+    machineUsage = '';
+    usageAvailable = false;
+    usedWith = '';
+    engineSerial = '';
+
+    /* ========== Product Info: Row 3 ========== */
+    partNumberId;
+    partDescription = '';
+    noPartReason = '';
+
+    /* ========== After save ========== */
+    caseId;
+    caseNumber = '';
+    isSaving = false;
+
+    /* ========== Computed properties ========== */
+    get isMachineUsageDisabled() {
+        return this.usageAvailable;
     }
 
-    /* ---------- chevron icons ---------- */
+    get showCaseNumber() {
+        return !!this.caseNumber;
+    }
+
+    /* ========== Chevron icons ========== */
     get assetChevron() {
         return this.assetOpen ? 'utility:chevrondown' : 'utility:chevronright';
     }
     get productChevron() {
         return this.productOpen ? 'utility:chevrondown' : 'utility:chevronright';
     }
-    get caseInfoChevron() {
-        return this.caseInfoOpen ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get commentsChevron() {
-        return this.commentsOpen ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get dealerChevron() {
-        return this.dealerOpen ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get attachmentsChevron() {
-        return this.attachmentsOpen ? 'utility:chevrondown' : 'utility:chevronright';
-    }
-    get resolveChevron() {
-        return this.resolveOpen ? 'utility:chevrondown' : 'utility:chevronright';
+
+    /* ========== Picklist options (Product Info only) ========== */
+    get noPartReasonOptions() {
+        return [
+            { label: 'No Fault Found', value: 'No Fault Found' },
+            { label: 'Legacy Part', value: 'Legacy Part' },
+            { label: 'Missing Part', value: 'Missing Part' }
+        ];
     }
 
-    /* ---------- handlers ---------- */
+    /* ========== Section toggle ========== */
     toggleSection(event) {
         const section = event.currentTarget.dataset.section;
-        const prop = section + 'Open';
-        this[prop] = !this[prop];
+        this[section + 'Open'] = !this[section + 'Open'];
     }
 
+    /* ========== Asset / Serial Number handlers ========== */
     handleAssetToggle(event) {
         this.assetNotApplicable = event.target.checked;
     }
 
-    /* ---------- combobox options ---------- */
-    get brandOptions() {
-        return [
-            { label: 'AGCO', value: 'agco' },
-            { label: 'Fendt', value: 'fendt' },
-            { label: 'Massey Ferguson', value: 'mf' },
-            { label: 'Valtra', value: 'valtra' }
-        ];
+    handleSerialNumberKeyUp(event) {
+        const newVal = event.target.value;
+        if (newVal !== this.serialNumber && this.assetFound) {
+            this.clearProductInfo();
+        }
+        this.serialNumber = newVal;
+        if (event.key === 'Enter') {
+            this.searchAsset();
+        }
     }
 
-    get machineTypeOptions() {
-        return [
-            { label: 'Tractor', value: 'tractor' },
-            { label: 'Combine', value: 'combine' },
-            { label: 'Sprayer', value: 'sprayer' }
-        ];
+    handleSerialNumberChange(event) {
+        this.serialNumber = event.target.value;
+        if (this.serialNumber && !this.assetFound && !this.isSearching) {
+            this.searchAsset();
+        }
     }
 
-    get unitOptions() {
-        return [
-            { label: 'Hours', value: 'hours' },
-            { label: 'Miles', value: 'miles' },
-            { label: 'Kilometers', value: 'km' }
-        ];
+    handleClearSearch() {
+        this.serialNumber = '';
+        this.clearProductInfo();
     }
 
-    get usageOptions() {
-        return [
-            { label: '0-500', value: '0-500' },
-            { label: '500-1000', value: '500-1000' },
-            { label: '1000+', value: '1000+' }
-        ];
+    async searchAsset() {
+        if (!this.serialNumber || this.isSearching) {
+            return;
+        }
+        this.isSearching = true;
+        try {
+            const result = await findAssetBySerial({ serialNumber: this.serialNumber });
+            if (result) {
+                this.assetId = result.assetId;
+                this.brand = result.brand || '';
+                this.machineType = result.machineType || '';
+                this.series = result.series || '';
+                this.modelNumber = result.modelNumber || '';
+                this.unitOfMeasure = result.unitOfMeasure || '';
+                this.machineUsage = result.machineUsage || '';
+                this.usageAvailable = result.usageAvailable;
+                this.engineSerial = result.engineSerial || '';
+                this.assetFound = true;
+            } else {
+                this.clearProductInfo();
+                this.showToast('Warning', 'No asset found for serial number: ' + this.serialNumber, 'warning');
+            }
+        } catch (error) {
+            this.clearProductInfo();
+            this.showToast('Error', error.body?.message || 'Error searching for asset', 'error');
+        } finally {
+            this.isSearching = false;
+        }
     }
 
-    get engineSerialOptions() {
-        return [{ label: 'N/A', value: 'na' }];
+    clearProductInfo() {
+        this.assetId = undefined;
+        this.assetFound = false;
+        this.brand = '';
+        this.machineType = '';
+        this.series = '';
+        this.modelNumber = '';
+        this.unitOfMeasure = '';
+        this.machineUsage = '';
+        this.usageAvailable = false;
+        this.engineSerial = '';
     }
 
-    get noPartReasonOptions() {
-        return [
-            { label: 'No Fault Found', value: 'noFaultFound' },
-            { label: 'Legacy Part', value: 'legacyPart' },
-            { label: 'Missing Part', value: 'missingPart' }
-        ];
+    /* ========== Product Info handlers ========== */
+    handleMachineUsageChange(event) {
+        this.machineUsage = event.target.value;
     }
 
-    get mainAreaOptions() {
-        return [
-            { label: 'Engine', value: 'engine' },
-            { label: 'Transmission', value: 'transmission' },
-            { label: 'Electrical', value: 'electrical' },
-            { label: 'Hydraulics', value: 'hydraulics' }
-        ];
+    handleUsedWithChange(event) {
+        this.usedWith = event.target.value;
     }
 
-    get subAreaOptions() {
-        return [
-            { label: 'Sub Area 1', value: 'sub1' },
-            { label: 'Sub Area 2', value: 'sub2' }
-        ];
+    handlePartNumberChange(event) {
+        this.partNumberId = event.detail.recordId;
+        if (this.partNumberId) {
+            this.fetchPartDescription();
+        } else {
+            this.partDescription = '';
+        }
     }
 
-    get priorityOptions() {
-        return [
-            { label: 'Low', value: 'low' },
-            { label: 'Medium', value: 'medium' },
-            { label: 'High', value: 'high' },
-            { label: 'Critical', value: 'critical' }
-        ];
+    async fetchPartDescription() {
+        try {
+            const desc = await getPartDescription({ partId: this.partNumberId });
+            this.partDescription = desc || '';
+        } catch (error) {
+            this.partDescription = '';
+            this.showToast('Error', 'Error fetching part description', 'error');
+        }
     }
 
-    get severityOptions() {
-        return [
-            { label: '1 - Critical', value: '1' },
-            { label: '2 - High', value: '2' },
-            { label: '3 - Medium', value: '3' },
-            { label: '4 - Low', value: '4' }
-        ];
+    handleNoPartReasonChange(event) {
+        this.noPartReason = event.detail.value;
+    }
+
+    /* ========== Save handler (Product Information only) ========== */
+    async handleSave() {
+        this.isSaving = true;
+        try {
+            const caseRecord = {
+                AssetId:                  this.assetId || null,
+                Brand__c:                 this.brand || null,
+                Machine_Type__c:          this.machineType || null,
+                Series__c:                this.series || null,
+                Model_Number__c:          this.modelNumber || null,
+                Unit_of_Measure__c:       this.unitOfMeasure || null,
+                Machine_Usage__c:         this.machineUsage || null,
+                Part_Number__c:           this.partNumberId || null,
+                Part_Description__c:      this.partDescription || null,
+                No_Causal_Part_Reason__c: this.noPartReason || null,
+                Used_With__c:             this.usedWith || null
+            };
+
+            if (this.caseId) {
+                caseRecord.Id = this.caseId;
+            }
+
+            const result = await saveCaseAsDraft({ caseRecord });
+            this.caseId = result.caseId;
+            this.caseNumber = result.caseNumber;
+            this.showToast('Success', 'Case ' + this.caseNumber + ' saved as Draft', 'success');
+        } catch (error) {
+            this.showToast('Error', error.body?.message || 'Error saving case', 'error');
+        } finally {
+            this.isSaving = false;
+        }
+    }
+
+    /* ========== Utility ========== */
+    showToast(title, message, variant) {
+        this.dispatchEvent(new ShowToastEvent({ title, message, variant }));
     }
 }
